@@ -40,6 +40,9 @@ out/
 .env
 .env.properties
 
+### .DS_Store ###
+.DS_Store
+
 ### Custom ###
 /frontend/node_modules
 /backend/build
