@@ -47,3 +47,8 @@ out/
 /frontend/node_modules
 /backend/build
 /backend/.gradle
+compiler.xml
+gradle.xml
+misc.xml
+modules.xml
+vcs.xml
