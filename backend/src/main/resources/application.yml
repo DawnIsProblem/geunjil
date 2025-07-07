@@ -1,0 +1,8 @@
+spring:
+  config:
+    import: optional:file:.env.properties, classpath:application-${spring.profiles.active}.yml
+  profiles:
+    active: local
+    
+server:
+  port: 8081
