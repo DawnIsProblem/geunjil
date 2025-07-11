@@ -3,6 +3,27 @@ spring:
     import: optional:file:.env.properties, classpath:application-${spring.profiles.active}.yml
   profiles:
     active: local
-    
+
 server:
   port: 8081
+
+sns:
+  google:
+    url: ${GOOGLE_URL} # 고정값
+    client:
+      id: ${GOOGLE_ID}
+      secret: ${GOOGLE_SECRET}
+    callback:
+      url: ${GOOGLE_CALLBACK_URL}
+    token:
+      url: ${GOOGLE_TOKEN_URL} # 고정값
+
+  kakao:
+    url: ${KAKAO_URL} # 고정값
+    client:
+      id: ${KAKAO_ID} # REST API KEY
+      secret: ${KAKAO_SECRET} # SECRET KEY
+    callback:
+      url: ${KAKAO_CALLBACK_URL}
+    token:
+      url: ${KAKAO_TOKEN_URL} # 고정값
