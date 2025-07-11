@@ -1,0 +1,28 @@
+name: Create Branch From Issue
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.body, 'branch-name:')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "{{ github.actor }}@users.noreply.github.com"
+          
+      - name: Extract branch name
+        id: extract
+        run: |
+          branch_name=$(echo "${{ github.event.issue.body }}" | grep 'branch-name:' | sed 's/branch-name://;s/ //g')
+          echo "branch_name=$branch_name" >> $GITHUB_ENV
+
+      - name: Create and push branch
+        run: |
+          git checkout -b ${{ env.branch_name }}
+          git push origin ${{ env.branch_name }}
