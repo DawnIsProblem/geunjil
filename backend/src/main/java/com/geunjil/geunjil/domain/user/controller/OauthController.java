@@ -1,5 +1,6 @@
 package com.geunjil.geunjil.domain.user.controller;
 
+import com.geunjil.geunjil.common.model.CommonResponse;
 import com.geunjil.geunjil.domain.user.dto.response.UserSocialLoginResponseDto;
 import com.geunjil.geunjil.domain.user.entity.User;
 import com.geunjil.geunjil.domain.user.enums.SocialLoginType;
@@ -58,4 +59,15 @@ public class OauthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("사용자 정보 저장 실패");
         }
     }
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "로그아웃 API",
+            description = "세션에 저장된 사용자 정보를 제거하여 로그아웃합니다."
+    )
+    public ResponseEntity<CommonResponse<String>> logout(HttpSession session) {
+        session.invalidate();
+        return ResponseEntity.ok(CommonResponse.success("로그아웃 성공!", null));
+    }
+
 }

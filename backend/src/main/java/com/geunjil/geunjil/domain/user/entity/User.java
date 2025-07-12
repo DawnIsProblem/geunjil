@@ -56,7 +56,7 @@ public class User {
     }
 
     @PreUpdate
-    protected void Updated() {
+    protected void onUpdated() {
         this.updatedAt = LocalDateTime.now();
     }
 
