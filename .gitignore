@@ -52,3 +52,4 @@ gradle.xml
 misc.xml
 modules.xml
 vcs.xml
+serviceAccountKey.json
