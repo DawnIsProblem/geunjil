@@ -3,6 +3,8 @@ package com.geunjil.geunjil.domain.user.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.geunjil.geunjil.domain.mypage.entity.Mypage;
+import com.geunjil.geunjil.domain.mypage.repository.MyPageRepository;
 import com.geunjil.geunjil.domain.user.entity.User;
 import com.geunjil.geunjil.domain.user.enums.SocialLoginType;
 import com.geunjil.geunjil.domain.user.oauth.SocialOauth;
@@ -30,6 +32,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OauthService {
 
+    private final MyPageRepository mypageRepository;
     private final UserRepository userRepository;
     private final List<SocialOauth> socialOauthList;
     private static final Logger logger = LoggerFactory.getLogger(OauthService.class);
@@ -80,6 +83,7 @@ public class OauthService {
 
         // 5. 기존 사용자 확인 후 처리
         Optional<User> existingUser = userRepository.findBySocialId(user.getSocialId());
+
         if (existingUser.isPresent()) { // 이미 존재하는 사용자라면 로그인 처리
             User existing = existingUser.get();
             existing.setAccessToken(user.getAccessToken());
@@ -87,7 +91,18 @@ public class OauthService {
             return userRepository.save(existing);
         } else { // 처음 로그인 하는 사용자라면
             user.setCreateAt(new Timestamp(System.currentTimeMillis()).toLocalDateTime());
-            return userRepository.save(user);
+            User saved = userRepository.save(user);
+
+            mypageRepository.save(Mypage.builder()
+                    .user(saved)
+                    .totalChallenge(0)
+                    .successChallenge(0)
+                    .stopedChallenge(0)
+                    .failChallenge(0)
+                    .achievement(0f)
+                    .build());
+
+            return saved;
         }
     }
 
