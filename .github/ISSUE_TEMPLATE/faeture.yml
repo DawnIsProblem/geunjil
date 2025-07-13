@@ -20,10 +20,3 @@ body:
       placeholder: '이슈에 대한 설명을 입력해주세요'
     validations:
       required: false
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        **🔗 자동 생성된 정보**
-        - Jira Story: `${{ inputs.storyKey }}`

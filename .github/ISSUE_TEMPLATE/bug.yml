@@ -35,10 +35,3 @@ body:
       description: 전달할 내용이 있다면 작성해주세요.
     validations:
       required: false
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        **🔗 자동 생성된 정보**
-        - Jira Story: `${{ inputs.storyKey }}`
