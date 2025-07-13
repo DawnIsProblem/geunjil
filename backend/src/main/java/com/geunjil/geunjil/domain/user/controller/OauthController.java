@@ -70,4 +70,18 @@ public class OauthController {
         return ResponseEntity.ok(CommonResponse.success("로그아웃 성공!", null));
     }
 
+    @GetMapping("/me")
+    @Operation(
+            summary = "세션에 저장된 로그인 사용자 확인 API",
+            description = "현재 로그인 세션에 저장된 사용자 정보를 반환합니다."
+    )
+    public ResponseEntity<?> getLoginSession(HttpSession session) {
+        User user = (User) session.getAttribute("loginUser");
+        if (user == null) {
+            return ResponseEntity.ok(CommonResponse.failure("❌로그인이 되어있지 않습니다."));
+        } else {
+            return ResponseEntity.ok(CommonResponse.success("✅로그인이 정상적으로 되어있습니다.", user));
+        }
+    }
+
 }
