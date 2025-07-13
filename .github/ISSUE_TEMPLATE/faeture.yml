@@ -7,8 +7,8 @@ body:
     id: branch
     attributes:
       label: '🍃 브랜치명 (Branch)'
-      description: '브랜치명을 작성해주세요 (예: feature/your-branch)'
-      placeholder: 'feature/your-branch'
+      description: '브랜치명을 작성해주세요 (예: feat/your-branch)'
+      placeholder: 'feat/your-branch'
     validations:
       required: true
 
@@ -20,3 +20,10 @@ body:
       placeholder: '이슈에 대한 설명을 입력해주세요'
     validations:
       required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **🔗 자동 생성된 정보**
+        - Jira Story: `${{ inputs.storyKey }}`
