@@ -3,6 +3,8 @@ package com.geunjil.geunjil.domain.challenge.scheduler;
 import com.geunjil.geunjil.domain.challenge.entity.Challenge;
 import com.geunjil.geunjil.domain.challenge.enums.Status;
 import com.geunjil.geunjil.domain.challenge.repository.ChallengeRepository;
+import com.geunjil.geunjil.domain.mypage.entity.Mypage;
+import com.geunjil.geunjil.domain.mypage.repository.MyPageRepository;
 import com.geunjil.geunjil.domain.notification.entity.UserDeviceToken;
 import com.geunjil.geunjil.domain.notification.repository.UserDeviceTokenRepository;
 import com.geunjil.geunjil.domain.notification.service.FirebaseNotificationService;
@@ -22,6 +24,7 @@ import java.util.List;
 public class ChallengeScheduler {
 
     private final ChallengeRepository challengeRepository;
+    private final MyPageRepository mypageRepository;
     private final FirebaseNotificationService firebaseNotificationService;
     private final UserDeviceTokenRepository userDeviceTokenRepository;
 
@@ -83,9 +86,19 @@ public class ChallengeScheduler {
             if (ch.getStatus() == Status.ONGOING && now.isAfter(endTime)) {
                 if (checkGpsInside(ch)) {
                     ch.setStatus(Status.SUCCESS);
+
+                    Mypage mypage = mypageRepository.findByUser(ch.getUserId());
+                    mypage.setSuccessChallenge(mypage.getSuccessChallenge() + 1);
+                    mypageRepository.save(mypage);
+
                     log.info("챌린지 {} 성공 처리!", ch.getTitle());
                 } else {
                     ch.setStatus(Status.FAIL);
+
+                    Mypage mypage = mypageRepository.findByUser(ch.getUserId());
+                    mypage.setFailChallenge(mypage.getFailChallenge() + 1);
+                    mypageRepository.save(mypage);
+
                     log.info("챌린지 {} 실패 처리 (종료 시 GPS 범위 벗어남).", ch.getTitle());
                 }
                 challengeRepository.save(ch);

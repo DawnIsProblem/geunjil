@@ -7,6 +7,11 @@ spring:
 server:
   port: 8082
 
+jwt:
+  header: Authorization
+  secret: a3d8e74d1eafebc3a80403d04c453afd0da30eb54d1111125bc6a26ad38eed6c
+  token-validity-in-seconds: 86400
+
 sns:
   google:
     url: ${GOOGLE_URL} # 고정값

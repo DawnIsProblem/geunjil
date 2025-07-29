@@ -7,6 +7,8 @@ import com.geunjil.geunjil.domain.challenge.dto.response.*;
 import com.geunjil.geunjil.domain.challenge.entity.Challenge;
 import com.geunjil.geunjil.domain.challenge.enums.Status;
 import com.geunjil.geunjil.domain.challenge.repository.ChallengeRepository;
+import com.geunjil.geunjil.domain.mypage.entity.Mypage;
+import com.geunjil.geunjil.domain.mypage.repository.MyPageRepository;
 import com.geunjil.geunjil.domain.user.entity.User;
 import com.geunjil.geunjil.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -19,10 +21,11 @@ import org.springframework.stereotype.Service;
 public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
+    private final MyPageRepository mypageRepository;
     private final UserRepository userRepository;
 
-    public ChallengeCreateChallengeResponseDto createChallenge(Long userId, ChallengeCreateChallengeRequestDto request) {
-        User user = userRepository.findById(userId)
+    public ChallengeCreateChallengeResponseDto createChallenge(String loginId, ChallengeCreateChallengeRequestDto request) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
 
         Challenge challenge = Challenge.builder()
@@ -41,6 +44,10 @@ public class ChallengeService {
 
         challengeRepository.save(challenge);
 
+        Mypage mypage = mypageRepository.findByUser(user);
+        mypage.setTotalChallenge(mypage.getTotalChallenge() + 1);
+        mypageRepository.save(mypage);
+
         return ChallengeCreateChallengeResponseDto.builder()
                 .challengeId(challenge.getId())
                 .title(challenge.getTitle())
@@ -56,9 +63,12 @@ public class ChallengeService {
                 .build();
     }
 
-    public ChallengeUpdateChallengeResponseDto update(Long challengeId, ChallengeUpdateChallengeRequestDto request) {
+    public ChallengeUpdateChallengeResponseDto update(Long challengeId, String loginId, ChallengeUpdateChallengeRequestDto request) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 챌린지가 존재하지 않습니다."));
+        if (!challenge.getUserId().getLoginId().equals(loginId)) {
+            throw new SecurityException("본인 소유의 챌린지만 수정할 수 있습니다.");
+        }
 
         challenge.setTitle(request.getTitle());
         challenge.setStartTime(request.getStartTime());
@@ -84,12 +94,34 @@ public class ChallengeService {
                 .build();
     }
 
-    public ChallengeDeleteChallengeResponseDto delete(Long challengeId) {
+    public ChallengeDeleteChallengeResponseDto delete(Long challengeId, String loginId) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 챌린지입니다."));
+        if (!challenge.getUserId().getLoginId().equals(loginId)) {
+            throw new SecurityException("본인 소유의 챌린지만 삭제할 수 있습니다.");
+        }
 
-        if (challenge.getStatus() != Status.PENDING) {
-            throw new IllegalArgumentException("챌린지의 상태가 [대기중]이 아니면 삭제할 수 없습니다.");
+        User user = challenge.getUserId();
+
+        if (challenge.getStatus() == Status.PENDING) {
+            Mypage mypage = mypageRepository.findByUser(user);
+            mypage.setTotalChallenge(mypage.getTotalChallenge() - 1);
+            mypageRepository.save(mypage);
+        } else if(challenge.getStatus() == Status.SUCCESS) {
+            Mypage mypage = mypageRepository.findByUser(user);
+            mypage.setTotalChallenge(mypage.getTotalChallenge() - 1);
+            mypage.setSuccessChallenge(mypage.getSuccessChallenge() - 1);
+            mypageRepository.save(mypage);
+        } else if(challenge.getStatus() == Status.STOPED) {
+            Mypage mypage = mypageRepository.findByUser(user);
+            mypage.setTotalChallenge(mypage.getTotalChallenge() - 1);
+            mypage.setStopedChallenge(mypage.getStopedChallenge() - 1);
+            mypageRepository.save(mypage);
+        } else if(challenge.getStatus() == Status.FAIL) {
+            Mypage mypage = mypageRepository.findByUser(user);
+            mypage.setTotalChallenge(mypage.getTotalChallenge() - 1);
+            mypage.setFailChallenge(mypage.getFailChallenge() - 1);
+            mypageRepository.save(mypage);
         }
 
         challengeRepository.delete(challenge);
@@ -98,9 +130,13 @@ public class ChallengeService {
                 .build();
     }
 
-    public ChallengeGetChallengeInfoResponseDto getInfo(Long challengeId) {
+    public ChallengeGetChallengeInfoResponseDto getInfo(Long challengeId, String loginId) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 챌린지입니다."));
+        if (!challenge.getUserId().getLoginId().equals(loginId)) {
+            throw new SecurityException("본인 소유의 챌린지만 조회할 수 있습니다.");
+        }
+
         return ChallengeGetChallengeInfoResponseDto.builder()
                 .challengeId(challenge.getId())
                 .title(challenge.getTitle())
@@ -118,14 +154,26 @@ public class ChallengeService {
                 .build();
     }
 
-    public ChallengeStopChallengeResponseDto stopChallenge(ChallengeStopChallengeRequestDto request) {
+    public ChallengeStopChallengeResponseDto stopChallenge(ChallengeStopChallengeRequestDto request, String loginId) {
         Challenge challenge = challengeRepository.findById(request.getChallengeId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 아이디의 챌린지가 존재하지 않습니다."));
+        User user  = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
+
+        // 소유자 검증 추가
+        if (!challenge.getUserId().getLoginId().equals(loginId)) {
+            throw new SecurityException("본인 소유의 챌린지만 중단할 수 있습니다.");
+        }
+
         if (challenge.getStatus() != Status.ONGOING) {
             throw new IllegalStateException("진행 중인 챌린지만 중단할 수 있습니다.");
         }
         challenge.setStatus(Status.STOPED);
         challengeRepository.save(challenge);
+
+        Mypage mypage = mypageRepository.findByUser(user);
+        mypage.setStopedChallenge(mypage.getStopedChallenge() + 1);
+        mypageRepository.save(mypage);
 
         return ChallengeStopChallengeResponseDto.builder()
                 .title(challenge.getTitle())

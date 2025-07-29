@@ -1,13 +1,18 @@
-import { create } from 'zustand'
+import {create} from 'zustand';
 
 interface UserStore {
-    user: null | { name: string; email: string};
-    setUser: (user: { name: string; email: string }) => void;
-    logout: () => void;
+  user: null | {name: string; email: string; loginId: string; provider: string};
+  setUser: (user: {
+    name: string;
+    email: string;
+    loginId: string;
+    provider: string;
+  }) => void;
+  logout: () => void;
 }
 
-export const useUserStore = create<UserStore>((set) => ({
-    user: null,
-    setUser: (user) => set({ user }),
-    logout: () => set({ user: null }),
+export const useUserStore = create<UserStore>(set => ({
+  user: null,
+  setUser: user => set({user}),
+  logout: () => set({user: null}),
 }));

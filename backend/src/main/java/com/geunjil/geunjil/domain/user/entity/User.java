@@ -37,9 +37,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     private SocialLoginType provider;
 
-    @Column(name = "access_token")
-    private String accessToken;
-
     @Column(name = "refresh_token")
     private String refreshToken;
 

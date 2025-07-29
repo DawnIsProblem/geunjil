@@ -6,8 +6,11 @@ import lombok.Getter;
 @Getter
 public class UserRegisterRequestDto {
 
-    @Schema(description = "로그안 아이디", example = "admin")
+    @Schema(description = "로그인 아이디", example = "admin")
     private String loginId;
+
+    @Schema(description = "닉네임", example = "검정검정")
+    private String name;
 
     @Schema(description = "비밀번호", example = "1234")
     private String password;

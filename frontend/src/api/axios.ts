@@ -1,8 +1,9 @@
 import axios from 'axios';
+import {BACKEND_BASE_URL} from '@env';
 
 const instance = axios.create({
-    baseURL: 'http://localhost:8082',
-    withCredentials: true,
+  baseURL: BACKEND_BASE_URL,
+  withCredentials: true,
 });
 
 export default instance;

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.geunjil.geunjil.domain.mypage.entity.Mypage;
 import com.geunjil.geunjil.domain.mypage.repository.MyPageRepository;
+import com.geunjil.geunjil.domain.user.dto.response.GoogleInfoResponseDto;
+import com.geunjil.geunjil.domain.user.dto.response.KakaoUserInfoResponseDto;
 import com.geunjil.geunjil.domain.user.entity.User;
 import com.geunjil.geunjil.domain.user.enums.SocialLoginType;
 import com.geunjil.geunjil.domain.user.oauth.SocialOauth;
@@ -15,7 +17,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -86,7 +93,6 @@ public class OauthService {
 
         if (existingUser.isPresent()) { // 이미 존재하는 사용자라면 로그인 처리
             User existing = existingUser.get();
-            existing.setAccessToken(user.getAccessToken());
             existing.setUpdatedAt(new Timestamp(System.currentTimeMillis()).toLocalDateTime());
             return userRepository.save(existing);
         } else { // 처음 로그인 하는 사용자라면
@@ -215,7 +221,6 @@ public class OauthService {
         user.setName(name); // 사용자의 이름 설정
         user.setEmail(email);
         user.setProvider(socialLoginType); // 로그인 제공자 설정
-        user.setAccessToken(accessToken); // 액세스 토큰 설정
         return user;
     }
 
@@ -227,4 +232,168 @@ public class OauthService {
                 .orElseThrow(() -> new IllegalArgumentException("알 수 없는 SocialLoginType 입니다."));
     }
 
+    public User loginWithKakaoAccessToken(String kakaoAccessToken) {
+        KakaoUserInfoResponseDto kakaoUserInfo = getKakaoUserInfo(kakaoAccessToken);
+
+        // 2. DB에 해당 socialId로 유저 존재 여부 확인
+        Optional<User> userOpt = userRepository.findBySocialId(kakaoUserInfo.getId());
+        User user;
+        if (userOpt.isPresent()) {
+            // 이미 있으면 업데이트 (필요하다면)
+            user = userOpt.get();
+            user.setName(kakaoUserInfo.getNickname());
+            user.setEmail(kakaoUserInfo.getEmail());
+            userRepository.save(user);
+
+            // ✅ 이미 회원이라면 Mypage가 있는지 체크 후, 없으면 생성
+            if (mypageRepository.findByUser(user) == null) {
+                mypageRepository.save(Mypage.builder()
+                        .user(user)
+                        .totalChallenge(0)
+                        .successChallenge(0)
+                        .stopedChallenge(0)
+                        .failChallenge(0)
+                        .achievement(0f)
+                        .build());
+            }
+        } else {
+            // 처음이면 새로 생성
+            user = new User();
+            user.setSocialId(kakaoUserInfo.getId());
+            user.setName(kakaoUserInfo.getNickname());
+            user.setEmail(kakaoUserInfo.getEmail());
+            user.setLoginId(kakaoUserInfo.getEmail());
+            user.setProvider(SocialLoginType.KAKAO);
+            userRepository.save(user);
+
+            // ✅ 신규 회원이면 무조건 Mypage 생성
+            mypageRepository.save(Mypage.builder()
+                    .user(user)
+                    .totalChallenge(0)
+                    .successChallenge(0)
+                    .stopedChallenge(0)
+                    .failChallenge(0)
+                    .achievement(0f)
+                    .build());
+        }
+
+        return user;
+    }
+
+    // 카카오 API 호출 함수
+    private KakaoUserInfoResponseDto getKakaoUserInfo(String kakaoAccessToken) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + kakaoAccessToken);
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(
+                    "https://kapi.kakao.com/v2/user/me", HttpMethod.GET, entity, String.class);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode json = objectMapper.readTree(response.getBody());
+
+            String id = json.get("id").asText("");
+            String nickname = "";
+            String email = "";
+
+            if (json.has("properties")) {
+                nickname = json.get("properties").get("nickname").asText("");
+            }
+            if (json.has("kakao_account")) {
+                email = json.get("kakao_account").get("email").asText("");
+            }
+
+            return KakaoUserInfoResponseDto.builder()
+                    .id(id)
+                    .nickname(nickname)
+                    .email(email)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("카카오 사용자 정보 파싱 오류", e);
+        }
+    }
+
+    public User loginWithGoogleIdToken(String idToken) {
+        // 1. idToken 검증 및 사용자 정보 파싱
+        GoogleInfoResponseDto googleUser = verifyAndGetGoogleUser(idToken);
+
+        // 2. DB에 해당 socialId(구글은 sub == id)로 유저 존재 여부 확인
+        Optional<User> userOpt = userRepository.findBySocialId(googleUser.getId());
+        User user;
+        if (userOpt.isPresent()) {
+            // 이미 있으면 정보 업데이트
+            user = userOpt.get();
+            user.setName(googleUser.getName());
+            user.setEmail(googleUser.getEmail());
+            userRepository.save(user);
+
+            // 마이페이지 없으면 생성
+            if (mypageRepository.findByUser(user) == null) {
+                mypageRepository.save(Mypage.builder()
+                        .user(user)
+                        .totalChallenge(0)
+                        .successChallenge(0)
+                        .stopedChallenge(0)
+                        .failChallenge(0)
+                        .achievement(0f)
+                        .build());
+            }
+        } else {
+            // 처음이면 새로 생성
+            user = new User();
+            user.setSocialId(googleUser.getId());
+            user.setName(googleUser.getName());
+            user.setEmail(googleUser.getEmail());
+            user.setLoginId(googleUser.getEmail());
+            user.setProvider(SocialLoginType.GOOGLE);
+            userRepository.save(user);
+
+            mypageRepository.save(Mypage.builder()
+                    .user(user)
+                    .totalChallenge(0)
+                    .successChallenge(0)
+                    .stopedChallenge(0)
+                    .failChallenge(0)
+                    .achievement(0f)
+                    .build());
+        }
+        return user;
+    }
+
+    // idToken을 검증하고, 사용자 정보 파싱 (구글 공식 API 이용)
+    private GoogleInfoResponseDto verifyAndGetGoogleUser(String idToken) {
+        try {
+            // Google 공식 라이브러리 이용 (com.google.api-client:google-api-client, com.google.oauth-client:google-oauth-client)
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier =
+                    new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(
+                            new com.google.api.client.http.javanet.NetHttpTransport(),
+                            com.google.api.client.json.jackson2.JacksonFactory.getDefaultInstance())
+                            .setAudience(java.util.Collections.singletonList("1011161288421-uodlll5cmsbns461csjjue7gi945e7e6.apps.googleusercontent.com")) // 예: "1011161288421-xxxxxxx.apps.googleusercontent.com"
+                            .build();
+
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken idTokenObj =
+                    verifier.verify(idToken);
+
+            if (idTokenObj != null) {
+                com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = idTokenObj.getPayload();
+
+                String userId = payload.getSubject();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+
+                return GoogleInfoResponseDto.builder()
+                        .id(userId)
+                        .email(email)
+                        .name(name)
+                        .build();
+            } else {
+                throw new RuntimeException("구글 idToken 검증 실패");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("구글 idToken 검증 중 오류", e);
+        }
+    }
 }
