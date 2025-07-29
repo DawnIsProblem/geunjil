@@ -1,11 +1,6 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+// metro.config.js
+const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('@react-native/metro-config').MetroConfig}
- */
-const config = {};
-
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = mergeConfig(getDefaultConfig(__dirname), {
+  // 👈 여기는 빈 객체로 두세요. 아무런 조작도 하지 마세요.
+});

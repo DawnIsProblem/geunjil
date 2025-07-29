@@ -1,6 +1,28 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+// == KOTLIN 메타데이터 버전 무시 ==
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions.freeCompilerArgs += ["-Xskip-metadata-version-check"]
+}
+
+// == AUTOLINK STUB TASK (앱) ==
+tasks.register("stubAutolinkingJson") {
+    doFirst {
+        def outDir = file("$buildDir/generated/autolinking")
+        outDir.mkdirs()
+        def jsonFile = file("$buildDir/generated/autolinking/autolinking.json")
+        if (!jsonFile.exists()) {
+        jsonFile.text = "[]"
+        println "🛠️  [APP] Stub autolinking.json 생성 완료"
+        }
+    }
+}
+tasks.named("generateAutolinkingPackageList")   { dependsOn("stubAutolinkingJson") }
+tasks.named("generateReactNativeEntryPoint")   { dependsOn("stubAutolinkingJson") }
+
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -110,6 +132,10 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    implementation ("com.google.android.gms:play-services-auth:20.1.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation("com.google.firebase:firebase-analytics")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

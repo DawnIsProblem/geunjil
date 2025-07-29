@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "61571051963",
+    "project_id": "geunjilgeunjil-d7f7d",
+    "storage_bucket": "geunjilgeunjil-d7f7d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61571051963:android:81f2b6113b23662d24149e",
+        "android_client_info": {
+          "package_name": "com.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "61571051963-54s1n7hfudc2ffh8doisr1bbjg0bqrte.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_YWznYT8tc61W5xfk6tkCur7QlLAjVPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "61571051963-54s1n7hfudc2ffh8doisr1bbjg0bqrte.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
