@@ -9,6 +9,7 @@ import com.geunjil.geunjil.domain.challenge.service.ChallengeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,68 +21,60 @@ public class ChallengeController {
 
     private final ChallengeService challengeService;
 
-    @PostMapping("/{userId}")
-    @Operation(
-            summary = "챌린지 생성 API",
-            description = "사용자가 챌린지를 생성합니다"
-    )
+    @PostMapping
+    @Operation(summary = "챌린지 생성 API", description = "도전할 챌린지를 생성합니다.")
     public ResponseEntity<CommonResponse<ChallengeCreateChallengeResponseDto>> create(
-            @PathVariable Long userId,
+            Authentication authentication,
             @RequestBody ChallengeCreateChallengeRequestDto request
     ) {
-        ChallengeCreateChallengeResponseDto response = challengeService.createChallenge(userId, request);
+        String loginId = authentication.getName();
+        ChallengeCreateChallengeResponseDto response = challengeService.createChallenge(loginId, request);
         return ResponseEntity.ok(CommonResponse.success("챌린지 생성 성공!", response));
     }
 
     @PatchMapping("/{challengeId}")
-    @Operation(
-            summary = "챌린지 수정 API",
-            description = "사용자가 챌린지의 정보를 수정합니다."
-    )
+    @Operation(summary = "챌린지 수정 API", description = "도전 할  챌린지의 정보를 수정합니다.")
     public ResponseEntity<CommonResponse<ChallengeUpdateChallengeResponseDto>> update(
             @PathVariable Long challengeId,
+            Authentication authentication,
             @RequestBody ChallengeUpdateChallengeRequestDto request
-    ){
-        ChallengeUpdateChallengeResponseDto response = challengeService.update(challengeId, request);
+    ) {
+        String loginId = authentication.getName();
+        ChallengeUpdateChallengeResponseDto response = challengeService.update(challengeId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("챌린지 정보 수정 성공!", response));
     }
 
     @DeleteMapping("/{challengeId}")
-    @Operation(
-            summary = "챌린지 삭제 API",
-            description = "사용자가 도전 하지 않은 챌린지를 삭제합니다."
-    )
+    @Operation(summary = "챌린지 삭제 API", description = "도전할 챌린지를 삭제합니다.")
     public ResponseEntity<CommonResponse<ChallengeDeleteChallengeResponseDto>> delete(
-            @PathVariable Long challengeId
+            @PathVariable Long challengeId,
+            Authentication authentication
     ) {
-        ChallengeDeleteChallengeResponseDto response = challengeService.delete(challengeId);
+        String loginId = authentication.getName();
+        ChallengeDeleteChallengeResponseDto response = challengeService.delete(challengeId, loginId);
         return ResponseEntity.ok(CommonResponse.success("챌린지 삭제 성공!", response));
     }
 
     @GetMapping("/{challengeId}")
-    @Operation(
-            summary = "챌린지 정보 추출 API",
-            description = "챌린지 아이디를 이용해서 챌린지의 정보를 추출합니다."
-
-    )
+    @Operation(summary = "챌린지 정보 호출 API", description = "생성한 챌린지의 정보를 호출합니다.")
     public ResponseEntity<CommonResponse<ChallengeGetChallengeInfoResponseDto>> getInfo(
-            @PathVariable Long challengeId
-    ){
-        ChallengeGetChallengeInfoResponseDto response = challengeService.getInfo(challengeId);
+            @PathVariable Long challengeId,
+            Authentication authentication
+    ) {
+        String loginId = authentication.getName();
+        ChallengeGetChallengeInfoResponseDto response = challengeService.getInfo(challengeId, loginId);
         return ResponseEntity.ok(CommonResponse.success("챌린지 정보 불러오기 성공!", response));
     }
 
     @PatchMapping("/stop")
-    @Operation(
-            summary = "챌린지 중단 API",
-            description = "도전중 중단사유 발생시 진행중인 챌린지를 중단합니다."
-    )
+    @Operation(summary = "챌린지 중단 API", description = "도전중인 챌린지가 실패 요건이 부합할 때 챌린지를 중단시킵니다.")
     public ResponseEntity<CommonResponse<ChallengeStopChallengeResponseDto>> stopChallenge(
+            Authentication authentication,
             @RequestBody ChallengeStopChallengeRequestDto request
-    ){
-        ChallengeStopChallengeResponseDto response = challengeService.stopChallenge(request);
-        return ResponseEntity.ok(CommonResponse.success("챌린지 중단 처리", response));
+    ) {
+        String loginId = authentication.getName();
+        ChallengeStopChallengeResponseDto response = challengeService.stopChallenge(request, loginId);
+        return ResponseEntity.ok(CommonResponse.success("챌린지 중단 성공!", response));
     }
-
 
 }
