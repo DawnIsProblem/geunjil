@@ -1,8 +1,6 @@
 package com.geunjil.geunjil.domain.mypage.service;
 
 import com.geunjil.geunjil.domain.challenge.repository.ChallengeRepository;
-import com.geunjil.geunjil.domain.mypage.dto.request.MypageInfoRequestDto;
-import com.geunjil.geunjil.domain.mypage.dto.request.MypageRecent3ChallengeRequestDto;
 import com.geunjil.geunjil.domain.mypage.dto.response.MypageInfoResponseDto;
 import com.geunjil.geunjil.domain.mypage.dto.response.MypageRecent3ChallengeResponseDto;
 import com.geunjil.geunjil.domain.mypage.entity.Mypage;
@@ -25,9 +23,13 @@ public class MypageService {
     private final ChallengeRepository challengeRepository;
     private final UserRepository userRepository;
 
-    public MypageInfoResponseDto getMypageInfo(MypageInfoRequestDto request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException(("등록되지 않은 아이디 입니다.")));
+    /*
+    * 프론트에서 토큰을 보내면 백엔드에서 복호화 후 api를 이용하게 만드는 방법
+    * 보안과 신뢰성을 높일 수 있는 방식
+    * */
+    public MypageInfoResponseDto getMypageInfoByLoginId(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 아이디 입니다."));
 
         Mypage mypage = mypageRepository.findByUser(user);
 
@@ -42,12 +44,11 @@ public class MypageService {
                 .createdAt(mypage.getCreatedAt())
                 .updatedAt(mypage.getUpdatedAt())
                 .build();
-
     }
 
-    public List<MypageRecent3ChallengeResponseDto> getRecentChallenges(MypageRecent3ChallengeRequestDto request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
+    public List<MypageRecent3ChallengeResponseDto> getRecentChallengesByLoginId(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 아이디 입니다."));
 
         return challengeRepository.findTop3ByUserIdOrderByCreatedAtDesc(user).stream()
                 .map(ch -> MypageRecent3ChallengeResponseDto.builder()
@@ -58,10 +59,9 @@ public class MypageService {
                 .collect(Collectors.toList());
     }
 
-    public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
-
+    public void deleteUserByLoginId(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 아이디 입니다."));
         mypageRepository.delete(mypageRepository.findByUser(user));
         userRepository.delete(user);
     }
