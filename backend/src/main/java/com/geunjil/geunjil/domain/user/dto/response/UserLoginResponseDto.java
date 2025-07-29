@@ -10,5 +10,8 @@ public class UserLoginResponseDto {
 
     private String loginId;
     private SocialLoginType provider;
+    private String name;
+    private String email;
+    private String accessToken; // LOCAL은 JWT임
 
 }
