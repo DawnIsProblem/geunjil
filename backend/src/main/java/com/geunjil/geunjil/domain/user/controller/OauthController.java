@@ -4,6 +4,7 @@ import com.geunjil.geunjil.common.model.CommonResponse;
 import com.geunjil.geunjil.domain.user.dto.response.UserSocialLoginResponseDto;
 import com.geunjil.geunjil.domain.user.entity.User;
 import com.geunjil.geunjil.domain.user.enums.SocialLoginType;
+import com.geunjil.geunjil.domain.user.jwt.JwtProvider;
 import com.geunjil.geunjil.domain.user.service.OauthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class OauthController {
 
     private final OauthService oauthService;
+    private final JwtProvider jwtProvider;
 
     @GetMapping("/{socialLoginType}")
     @Operation(
@@ -51,9 +55,11 @@ public class OauthController {
         if(user != null) {
             log.info("✅사용자 정보를 데이터 베이스에 저장했습니다. :: {}", user.getName());
 
+            String accessToken = jwtProvider.createToken(user.getLoginId(), "ROLE_USER");
+
             session.setAttribute("loginUser", user);
 
-            return ResponseEntity.ok(new UserSocialLoginResponseDto(user.getName(), user.getAccessToken(), user.getProvider(), user.getEmail()));
+            return ResponseEntity.ok(new UserSocialLoginResponseDto(user.getName(), accessToken, user.getProvider(), user.getEmail()));
         } else {
             log.error("❌사용자 정보 저장 실패");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("사용자 정보 저장 실패");
@@ -83,5 +89,31 @@ public class OauthController {
             return ResponseEntity.ok(CommonResponse.success("✅로그인이 정상적으로 되어있습니다.", user));
         }
     }
+
+
+    @PostMapping("/kakao")
+    public ResponseEntity<?> kakaoLogin(@RequestBody Map<String, String> body) {
+        String accessToken = body.get("accessToken");
+        // 서비스 계층에서 실제 인증 및 유저 저장/조회, JWT 발급 처리
+        User user = oauthService.loginWithKakaoAccessToken(accessToken);
+        String jwt = jwtProvider.createToken(user.getLoginId(), "ROLE_USER");
+        return ResponseEntity.ok(Map.of(
+                "accessToken", jwt,
+                "user", user
+        ));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> body) {
+        String idToken = body.get("idToken");
+        // idToken을 검증하고, 사용자 정보 DB 저장/조회, JWT 발급 처리
+        User user = oauthService.loginWithGoogleIdToken(idToken);
+        String jwt = jwtProvider.createToken(user.getLoginId(), "ROLE_USER");
+        return ResponseEntity.ok(Map.of(
+                "accessToken", jwt,
+                "user", user
+        ));
+    }
+
 
 }
