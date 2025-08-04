@@ -1,7 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {getMainPageInfo} from '../api/mainpageApi';
+import React, {useEffect} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import styled from 'styled-components/native';
 import Header from '../components/HomePage/HeaderHome';
 import Footer from '../components/Common/Footer';
@@ -11,51 +9,37 @@ import StatCard from '../components/HomePage/StatCard';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AuthGuard from '../components/Common/AuthGuard';
+import {TouchableOpacity} from 'react-native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../types/navigation';
+import { useMainInfoStore } from '../store/mainInfoStore';
 
-const HomePage = ({navigation}: any) => {
+import useCurrentLocation from '../hooks/useCurrentLocation';
+import {Alert} from 'react-native';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Home'
+>;
+
+const HomePage = ({navigation}: {navigation: HomeScreenNavigationProp}) => {
   console.log('HomePage 렌더링!');
 
-  const [mainInfo, setMainInfo] = useState<any>(null);
-
+  const {location, fetchLocation} = useCurrentLocation();
+  const mainInfo = useMainInfoStore(state => state.mainInfo);
+  const fetchMainInfo = useMainInfoStore(state => state.fetchMainInfo);
+  
   useFocusEffect(
     React.useCallback(() => {
-      const fetchData = async () => {
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        if (!accessToken) {
-          return;
-        }
-        try {
-          const res = await getMainPageInfo(accessToken);
-          setMainInfo(res);
-        } catch (err) {
-          // 에러 핸들링
-        }
-      };
-      fetchData();
-    }, []), // 의존성 배열 비워두면 focus마다 실행
+      fetchMainInfo();
+    }, [fetchMainInfo])
   );
 
   useEffect(() => {
-    console.log('useEffect 진입!');
-    const fetchData = async () => {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      if (!accessToken) {
-        console.log('토큰 없음');
-        return;
-      }
-      try {
-        const res = await getMainPageInfo(accessToken);
-        console.log('메인페이지 응답:', res);
-        console.log('nextChallenge:', res.data?.nextChallenge);
-        setMainInfo(res);
-      } catch (err) {
-        console.log('메인페이지 호출 에러:', err);
-      }
-    };
-    fetchData();
-  }, []);
+    fetchMainInfo();
+  }, [fetchMainInfo]);
 
-  if (!mainInfo || !mainInfo.data) {
+  if (!mainInfo) {
     return (
       <Container>
         <Title>로딩중...</Title>
@@ -63,32 +47,46 @@ const HomePage = ({navigation}: any) => {
     );
   }
 
-  // **data 아래에 있음**
-  const current = mainInfo.data?.currentChallenge;
-  const next = mainInfo.data?.nextChallenge;
-  const result = mainInfo.data?.result;
+  const current = mainInfo.currentChallenge;
+  const next = mainInfo.nextChallenge;
+  const result = mainInfo.result;
+
+  console.log('current:', current);
 
   return (
     <AuthGuard>
       <Container>
         <Header />
         <Scroll>
-          <ProgressCard
-            colors={['#3B81F5', '#4E47E6']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}>
-            <Title>진행 중인 챌린지</Title>
-            <SubTitle>{current?.title || '-'}</SubTitle>
-            <Time>
-              {current ? `${current.startTime} ~ ${current.endTime}` : '-'}
-            </Time>
-            <Location>
-              <Icon name="location-outline" size={16} color="#fff" />{' '}
-              {current?.location || '-'}
-            </Location>
-            <ProgressBar percent={current?.progressPercent ?? 0} />
-            <Percent>{current?.progressPercent ?? 0}% 완료</Percent>
-          </ProgressCard>
+          <TouchableOpacity
+            onPress={() => {
+              console.log('ProgressCard 눌림!', current?.id);
+              if (!current?.id) {
+                return;
+              }
+              navigation.navigate('ChallengeProgress', {
+                challengeId: current.id,
+              });
+              console.log('navigation.navigate 호출됨!');
+            }}>
+            {/* ... */}
+            <ProgressCard
+              colors={['#3B81F5', '#4E47E6']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}>
+              <Title>진행 중인 챌린지</Title>
+              <SubTitle>{current?.title || '-'}</SubTitle>
+              <Time>
+                {current ? `${current.startTime} ~ ${current.endTime}` : '-'}
+              </Time>
+              <Location>
+                <Icon name="location-outline" size={16} color="#fff" />{' '}
+                {current?.location || '-'}
+              </Location>
+              <ProgressBar percent={current?.progressPercent ?? 0} />
+              <Percent>{current?.progressPercent ?? 0}% 완료</Percent>
+            </ProgressCard>
+          </TouchableOpacity>
 
           <SectionTitle>다음 챌린지</SectionTitle>
           <NextChallengeCard challenge={next} navigation={navigation} />
@@ -118,6 +116,25 @@ const HomePage = ({navigation}: any) => {
           <QuickAction onPress={() => navigation.navigate('CreateChallenge')}>
             <Plus>＋</Plus>
             <QuickText>챌린지 생성</QuickText>
+          </QuickAction>
+
+          <QuickAction
+            onPress={async () => {
+              await fetchLocation();
+              if (location) {
+                Alert.alert(
+                  '내 위치 정보',
+                  `위도: ${location.latitude}\n경도: ${location.longitude}`,
+                );
+              } else {
+                Alert.alert(
+                  '위치 정보 없음',
+                  '현재 위치 정보를 가져오지 못했습니다.',
+                );
+              }
+            }}>
+            <Plus>📍</Plus>
+            <QuickText>내 위치 정보 확인하기</QuickText>
           </QuickAction>
         </Scroll>
         <Footer />

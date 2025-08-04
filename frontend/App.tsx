@@ -13,6 +13,7 @@ import MyPage from './src/pages/MyPage';
 import CreateChallengePage from './src/pages/CreateChallengePage';
 import AllChallengesPage from './src/pages/AllChallengesPage';
 import ChallengeEditPage from './src/pages/ChallengeEditPage';
+import ChallengeProgressPage from './src/pages/ChallengeProgressPage';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -34,6 +35,10 @@ const App = () => {
           />
           <Stack.Screen name="AllChallenges" component={AllChallengesPage} />
           <Stack.Screen name="ChallengeEdit" component={ChallengeEditPage} />
+          <Stack.Screen
+            name="ChallengeProgress"
+            component={ChallengeProgressPage}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>

@@ -3,13 +3,15 @@ import styled from 'styled-components/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import HeaderCreate from '../components/CreateChallengePage/HeaderCreate';
-import LocationInput from '../components/CreateChallengePage/LocationInput';
 import Footer from '../components/Common/Footer';
-import {Modal} from 'react-native';
-import WebView from 'react-native-webview';
-import type {NativeSyntheticEvent} from 'react-native';
-type WebViewMessageEvent = NativeSyntheticEvent<{data: string}>;
+import {Modal, TouchableOpacity, Alert} from 'react-native';
 import AuthGuard from '../components/Common/AuthGuard';
+import PlaceSearchInput from '../components/CreateChallengePage/PlaceSearchInput';
+import MapView, {Marker, Circle} from 'react-native-maps';
+import {useNavigation, NavigationProp} from '@react-navigation/native';
+import {RootStackParamList} from '../types/navigation';
+import {createChallengeApi} from '../api/createChallengeApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CreateChallengePage = () => {
   const [title, setTitle] = useState('');
@@ -19,9 +21,62 @@ const CreateChallengePage = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-
+  const [radius, setRadius] = useState<number | null>(null);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [address, setAddress] = useState('');
-  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showPlaceModal, setShowPlaceModal] = useState(false);
+
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const handleCreate = async () => {
+    if (
+      !title ||
+      !startTime ||
+      !endTime ||
+      !date ||
+      !address ||
+      !lat ||
+      !lng ||
+      !radius
+    ) {
+      Alert.alert('모든 필드를 입력해주세요!');
+      return;
+    }
+
+    // 토큰 꺼내기
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    console.log('accessToken:', accessToken);
+    if (!accessToken) {
+      Alert.alert('로그인이 필요합니다. 다시 로그인 해주세요.');
+      return;
+    }
+
+    try {
+      await createChallengeApi(
+        {
+          title,
+          startTime: startTime.toLocaleTimeString('en-GB', {hour12: false}),
+          endTime: endTime.toLocaleTimeString('en-GB', {hour12: false}),
+          day: date.toISOString().split('T')[0],
+          location: address,
+          lat,
+          lng,
+          radius,
+        },
+        accessToken,
+      );
+      Alert.alert('챌린지 생성 성공!', '', [
+        {text: '확인', onPress: () => navigation.navigate('Home')},
+      ]);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert(
+        '챌린지 생성 실패',
+        e?.response?.data?.message || '다시 시도해 주세요.',
+      );
+    }
+  };
 
   return (
     <AuthGuard>
@@ -84,23 +139,66 @@ const CreateChallengePage = () => {
               <SectionTitle>위치 설정</SectionTitle>
 
               <Label>활동 지역</Label>
-              <Input
-                placeholder="주소를 입력하세요"
-                value={address}
-                onFocus={() => setShowAddressModal(true)}
-                editable={false}
-              />
+              <TouchableOpacity onPress={() => setShowPlaceModal(true)}>
+                <Input
+                  pointerEvents="none"
+                  editable={false}
+                  value={address}
+                  placeholder="주소 또는 장소를 검색하세요"
+                />
+              </TouchableOpacity>
 
               <Label>활동 반경(미터)</Label>
-              <Input placeholder="예: 500" keyboardType="numeric" />
-              <LocationInput />
+              <Input
+                placeholder="예: 500"
+                keyboardType="numeric"
+                value={
+                  radius !== null && radius !== undefined ? String(radius) : ''
+                }
+                onChangeText={(text: string) =>
+                  setRadius(text ? Number(text) : null)
+                }
+              />
+
+              {console.log('[지도좌표]', lat, lng)}
+
+              <MapBox
+                initialRegion={{
+                  latitude: 37.5665,
+                  longitude: 126.978,
+                  latitudeDelta: 0.1,
+                  longitudeDelta: 0.1,
+                }}
+                region={
+                  lat && lng
+                    ? {
+                        latitude: lat,
+                        longitude: lng,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }
+                    : undefined
+                }
+                pointerEvents="auto">
+                {lat && lng && (
+                  <Marker coordinate={{latitude: lat, longitude: lng}} />
+                )}
+                {lat && lng && radius && (
+                  <Circle
+                    center={{latitude: lat, longitude: lng}}
+                    radius={radius}
+                    fillColor="rgba(60,130,246,0.1)"
+                    strokeColor="#3B81F5"
+                  />
+                )}
+              </MapBox>
             </Box>
 
             <SelectButtonRow>
-              <CancelBtn>
+              <CancelBtn onPress={() => navigation.navigate('Home')}>
                 <BtnText>취소</BtnText>
               </CancelBtn>
-              <CreateBtn>
+              <CreateBtn onPress={handleCreate}>
                 <BtnTextWhite>챌린지 생성</BtnTextWhite>
               </CreateBtn>
             </SelectButtonRow>
@@ -151,18 +249,20 @@ const CreateChallengePage = () => {
           />
         )}
 
-        <Modal visible={showAddressModal} animationType="slide">
-          <WebView
-            source={{uri: 'https://postcode.map.daum.net/search'}}
-            onMessage={(event: WebViewMessageEvent) => {
-              setAddress(event.nativeEvent.data);
-              setShowAddressModal(false);
-            }}
-          />
-
-          <CancelBtn onPress={() => setShowAddressModal(false)}>
-            <BtnText>닫기</BtnText>
-          </CancelBtn>
+        <Modal visible={showPlaceModal} animationType="slide">
+          <ModalContainer>
+            <PlaceSearchInput
+              onPlaceSelected={place => {
+                setAddress(place.address);
+                setLat(place.lat);
+                setLng(place.lng);
+                setShowPlaceModal(false);
+              }}
+            />
+            <CloseBtn onPress={() => setShowPlaceModal(false)}>
+              <CloseBtnText>닫기</CloseBtnText>
+            </CloseBtn>
+          </ModalContainer>
         </Modal>
       </Wrapper>
     </AuthGuard>
@@ -285,6 +385,33 @@ const BtnText = styled.Text`
 
 const BtnTextWhite = styled(BtnText)`
   color: #ffffff;
+`;
+
+const MapBox = styled(MapView)`
+  width: 100%;
+  height: 180px;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const ModalContainer = styled.View`
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+`;
+
+const CloseBtn = styled.TouchableOpacity`
+  margin-top: 16px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #e5e7eb;
+`;
+
+const CloseBtnText = styled.Text`
+  font-size: 16px;
+  font-weight: bold;
 `;
 
 export default CreateChallengePage;
