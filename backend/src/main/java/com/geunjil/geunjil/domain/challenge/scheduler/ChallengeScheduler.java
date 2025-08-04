@@ -1,8 +1,10 @@
 package com.geunjil.geunjil.domain.challenge.scheduler;
 
+import com.geunjil.geunjil.domain.challenge.dto.request.ChallengeUserLocationDto;
 import com.geunjil.geunjil.domain.challenge.entity.Challenge;
 import com.geunjil.geunjil.domain.challenge.enums.Status;
 import com.geunjil.geunjil.domain.challenge.repository.ChallengeRepository;
+import com.geunjil.geunjil.domain.challenge.service.ChallengeUserLocationRedisService;
 import com.geunjil.geunjil.domain.mypage.entity.Mypage;
 import com.geunjil.geunjil.domain.mypage.repository.MyPageRepository;
 import com.geunjil.geunjil.domain.notification.entity.UserDeviceToken;
@@ -27,6 +29,7 @@ public class ChallengeScheduler {
     private final MyPageRepository mypageRepository;
     private final FirebaseNotificationService firebaseNotificationService;
     private final UserDeviceTokenRepository userDeviceTokenRepository;
+    private final ChallengeUserLocationRedisService userLocationRedisService;
 
     /**
      * 1분마다 Pending 상태의 챌린지를 검사 진행.
@@ -109,6 +112,9 @@ public class ChallengeScheduler {
     private void checkOngoingChallenge(Challenge ch) {
         if (!checkGpsInside(ch)) {
             ch.setWarningCount(ch.getWarningCount() + 1);
+
+            log.warn("⛔️ 챌린지 {} 경고! 범위 안으로 이동해주세요! (누적: {}/{})", ch.getTitle(), ch.getWarningCount(), 3);
+
             if (ch.getWarningCount() >= 3) {
                 ch.setStatus(Status.FAIL);
                 log.info("챌린지 {} 경고 3회 이상 → 실패 처리.", ch.getTitle());
@@ -117,10 +123,33 @@ public class ChallengeScheduler {
         }
     }
 
-    private boolean checkGpsInside(Challenge challenge) {
-        // TODO: 실제로는 현재 사용자의 위치를 가져와 (lat, lng) 와 비교
-        // 임시: 항상 true 반환
-        return true;
+    public boolean checkGpsInside(Challenge challenge) {
+        Long challengeId = challenge.getId();
+        Long userId = challenge.getUserId().getId();
+
+        ChallengeUserLocationDto latest = userLocationRedisService.getLocation(challengeId, userId);
+        if (latest == null) return false;
+
+        double userLat = latest.getLat();
+        double userLng = latest.getLng();
+        double targetLat = challenge.getLat();
+        double targetLng = challenge.getLng();
+        int radiusMeter = challenge.getRadius();
+
+        double distance = haversine(userLat, userLng, targetLat, targetLng);
+        return distance <= radiusMeter;
     }
+
+    private double haversine(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371000; // 지구 반지름(m)
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // meter 단위
+    }
+
 
 }
