@@ -54,6 +54,7 @@ public class MainPageService {
             }
 
             currentChallengeDto = ChallengeGetCurrentChallengeResponseDto.builder()
+                    .id(currentChallenge.getId())
                     .title(currentChallenge.getTitle())
                     .startTime(currentChallenge.getStartTime())
                     .endTime(currentChallenge.getEndTime())
