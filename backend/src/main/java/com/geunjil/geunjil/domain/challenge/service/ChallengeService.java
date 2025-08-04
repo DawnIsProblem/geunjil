@@ -15,6 +15,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -154,8 +156,8 @@ public class ChallengeService {
                 .build();
     }
 
-    public ChallengeStopChallengeResponseDto stopChallenge(ChallengeStopChallengeRequestDto request, String loginId) {
-        Challenge challenge = challengeRepository.findById(request.getChallengeId())
+    public ChallengeStopChallengeResponseDto stopChallenge(Long challengeId, String loginId) {
+        Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 아이디의 챌린지가 존재하지 않습니다."));
         User user  = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
@@ -178,6 +180,25 @@ public class ChallengeService {
         return ChallengeStopChallengeResponseDto.builder()
                 .title(challenge.getTitle())
                 .build();
+    }
+
+    public List<ChallengeGetNextChallengeInfoResponseDto> getPendingChallenges(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+
+        List<Challenge> pending = challengeRepository
+                .findByUserIdAndStatusOrderByStartTimeAsc(user, Status.PENDING);
+
+        return pending.stream()
+                .map(ch -> ChallengeGetNextChallengeInfoResponseDto.builder()
+                        .id(ch.getId())
+                        .title(ch.getTitle())
+                        .date(ch.getDay())
+                        .startTime(ch.getStartTime())
+                        .endTime(ch.getEndTime())
+                        .location(ch.getLocation())
+                        .build()
+                ).toList();
     }
 
 }

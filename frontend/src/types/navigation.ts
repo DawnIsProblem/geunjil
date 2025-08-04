@@ -7,4 +7,5 @@ export type RootStackParamList = {
   CreateChallenge: undefined;
   AllChallenges: undefined;
   ChallengeEdit: {challengeId: number};
+  ChallengeProgress: {challengeId: number};
 };

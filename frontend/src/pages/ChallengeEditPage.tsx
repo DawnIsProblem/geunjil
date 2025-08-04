@@ -1,46 +1,45 @@
 import React, {useState, useEffect} from 'react';
-import {RouteProp, useRoute, useNavigation} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getChallengeInfo} from '../api/getChallengeInfoApi';
-import {updateChallenge} from '../api/editChallengeInfoApi'; // 직접 만든 api import 추가
+import styled from 'styled-components/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
-import HeaderCreate from '../components/EditChallengePage/HeaderEdit';
-import LocationInput from '../components/CreateChallengePage/LocationInput';
-import Footer from '../components/Common/Footer';
-import {Modal, Alert} from 'react-native';
-import WebView from 'react-native-webview';
-import type {NativeSyntheticEvent} from 'react-native';
-import {RootStackParamList} from '../types/navigation';
-import styled from 'styled-components/native';
+import {Modal, TouchableOpacity, Alert} from 'react-native';
+import MapView, {Marker, Circle} from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  useRoute,
+  useNavigation,
+  NavigationProp,
+  RouteProp,
+} from '@react-navigation/native';
 import AuthGuard from '../components/Common/AuthGuard';
+import PlaceSearchInput from '../components/CreateChallengePage/PlaceSearchInput';
+import HeaderEdit from '../components/EditChallengePage/HeaderEdit';
+import Footer from '../components/Common/Footer';
+import {RootStackParamList} from '../types/navigation';
+import {getChallengeInfo} from '../api/getChallengeInfoApi';
+import {updateChallengeApi} from '../api/updateChallengeApi';
 
-type WebViewMessageEvent = NativeSyntheticEvent<{data: string}>;
 type ChallengeEditRouteProp = RouteProp<RootStackParamList, 'ChallengeEdit'>;
 
-const EditChallengePage = () => {
+const ChallengeEditPage = () => {
   const route = useRoute<ChallengeEditRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const challengeId = route.params?.challengeId;
 
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState<Date | undefined>();
   const [endTime, setEndTime] = useState<Date | undefined>();
   const [date, setDate] = useState<Date | undefined>();
-  const [lat, setLat] = useState<number | undefined>();
-  const [lng, setLng] = useState<number | undefined>();
-  const [radius, setRadius] = useState<number | undefined>();
-  const [address, setAddress] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
-
-  console.log('[EditChallengePage] challengeId:', challengeId);
+  const [radius, setRadius] = useState<number | null>(null);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [address, setAddress] = useState('');
+  const [showPlaceModal, setShowPlaceModal] = useState(false);
 
   useEffect(() => {
-    console.log('challengeId:', challengeId);
-
     const fetchChallenge = async () => {
       if (!challengeId) {
         return;
@@ -49,76 +48,92 @@ const EditChallengePage = () => {
       if (!accessToken) {
         return;
       }
+
       try {
         const res = await getChallengeInfo(challengeId, accessToken);
         const info = res.data;
         setTitle(info.title);
+        setDate(new Date(info.day));
         setStartTime(new Date(`${info.day}T${info.startTime}`));
         setEndTime(new Date(`${info.day}T${info.endTime}`));
-        setDate(new Date(info.day));
         setAddress(info.location);
         setLat(info.lat);
         setLng(info.lng);
         setRadius(Number(info.radius));
       } catch (e) {
         console.log('챌린지 상세 불러오기 에러', e);
+        Alert.alert('챌린지 정보를 불러오지 못했습니다.');
       }
     };
     fetchChallenge();
   }, [challengeId]);
 
   const handleRadiusChange = (text: string) => {
-    if (text === '') {
-      setRadius(undefined);
-    } else {
-      setRadius(Number(text));
-    }
+    setRadius(text ? Number(text) : null);
   };
 
   const handleEditSubmit = async () => {
-    const accessToken = await AsyncStorage.getItem('accessToken');
-    if (!accessToken || !challengeId) {
+    if (
+      !title ||
+      !startTime ||
+      !endTime ||
+      !date ||
+      !address ||
+      !lat ||
+      !lng ||
+      !radius
+    ) {
+      Alert.alert('모든 필드를 입력해주세요!');
       return;
     }
+
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    if (!accessToken || !challengeId) {
+      Alert.alert('로그인이 필요합니다. 다시 로그인 해주세요.');
+      return;
+    }
+
     try {
-      await updateChallenge(
+      await updateChallengeApi(
         challengeId,
         {
           title,
-          startTime: startTime?.toTimeString().slice(0, 8),
-          endTime: endTime?.toTimeString().slice(0, 8),
-          day: date?.toISOString().slice(0, 10),
+          startTime: startTime.toLocaleTimeString('en-GB', {hour12: false}),
+          endTime: endTime.toLocaleTimeString('en-GB', {hour12: false}),
+          day: date.toISOString().split('T')[0],
           location: address,
           lat,
           lng,
-          radius: Number(radius),
+          radius,
         },
         accessToken,
       );
-      Alert.alert('수정이 완료되었습니다!');
-      navigation.goBack();
-    } catch (err) {
-      Alert.alert('수정 실패!');
-      console.log('수정 실패', err);
+      Alert.alert('챌린지 수정 성공!', '', [
+        {text: '확인', onPress: () => navigation.goBack()},
+      ]);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert(
+        '챌린지 수정 실패',
+        e?.response?.data?.message || '다시 시도해 주세요.',
+      );
     }
   };
 
   return (
     <AuthGuard>
       <Wrapper>
-        <HeaderCreate />
+        <HeaderEdit />
         <ContentContainer>
           <Content>
             <Box>
               <SectionTitle>날짜 설정</SectionTitle>
-
               <Label>챌린지 타이틀</Label>
               <Input
                 placeholder="예: 하체하는 날"
                 value={title}
                 onChangeText={setTitle}
               />
-
               <TimeRow>
                 <TimeColumn>
                   <Label>시작 시간</Label>
@@ -134,7 +149,6 @@ const EditChallengePage = () => {
                     <Icon name="time-outline" size={20} color="#888" />
                   </TimeField>
                 </TimeColumn>
-
                 <TimeColumn>
                   <Label>종료 시간</Label>
                   <TimeField onPress={() => setShowEndTimePicker(true)}>
@@ -150,7 +164,6 @@ const EditChallengePage = () => {
                   </TimeField>
                 </TimeColumn>
               </TimeRow>
-
               <Label>날짜</Label>
               <DateSelector onPress={() => setShowDatePicker(true)}>
                 <Icon name="calendar-outline" size={20} color="#333" />
@@ -159,30 +172,59 @@ const EditChallengePage = () => {
                 </DateText>
               </DateSelector>
             </Box>
-
             <Box>
               <SectionTitle>위치 설정</SectionTitle>
-
               <Label>활동 지역</Label>
-              <Input
-                placeholder="주소를 입력하세요"
-                value={address}
-                onFocus={() => setShowAddressModal(true)}
-                editable={false}
-              />
-
+              <TouchableOpacity onPress={() => setShowPlaceModal(true)}>
+                <Input
+                  pointerEvents="none"
+                  editable={false}
+                  value={address}
+                  placeholder="주소 또는 장소를 검색하세요"
+                />
+              </TouchableOpacity>
               <Label>활동 반경(미터)</Label>
               <Input
                 placeholder="예: 500"
                 keyboardType="numeric"
-                value={radius !== undefined ? String(radius) : ''}
+                value={
+                  radius !== null && radius !== undefined ? String(radius) : ''
+                }
                 onChangeText={handleRadiusChange}
               />
-              <LocationInput />
+              <MapBox
+                initialRegion={{
+                  latitude: lat || 37.5665,
+                  longitude: lng || 126.978,
+                  latitudeDelta: 0.1,
+                  longitudeDelta: 0.1,
+                }}
+                region={
+                  lat && lng
+                    ? {
+                        latitude: lat,
+                        longitude: lng,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }
+                    : undefined
+                }
+                pointerEvents="auto">
+                {lat && lng && (
+                  <Marker coordinate={{latitude: lat, longitude: lng}} />
+                )}
+                {lat && lng && radius && (
+                  <Circle
+                    center={{latitude: lat, longitude: lng}}
+                    radius={radius}
+                    fillColor="rgba(60,130,246,0.1)"
+                    strokeColor="#3B81F5"
+                  />
+                )}
+              </MapBox>
             </Box>
-
             <SelectButtonRow>
-              <CancelBtn>
+              <CancelBtn onPress={() => navigation.goBack()}>
                 <BtnText>취소</BtnText>
               </CancelBtn>
               <CreateBtn onPress={handleEditSubmit}>
@@ -191,9 +233,7 @@ const EditChallengePage = () => {
             </SelectButtonRow>
           </Content>
         </ContentContainer>
-
         <Footer />
-
         {showDatePicker && (
           <DateTimePicker
             value={date || new Date()}
@@ -207,7 +247,6 @@ const EditChallengePage = () => {
             }}
           />
         )}
-
         {showStartTimePicker && (
           <DateTimePicker
             value={startTime || new Date()}
@@ -221,7 +260,6 @@ const EditChallengePage = () => {
             }}
           />
         )}
-
         {showEndTimePicker && (
           <DateTimePicker
             value={endTime || new Date()}
@@ -235,19 +273,20 @@ const EditChallengePage = () => {
             }}
           />
         )}
-
-        <Modal visible={showAddressModal} animationType="slide">
-          <WebView
-            source={{uri: 'https://postcode.map.daum.net/search'}}
-            onMessage={(event: WebViewMessageEvent) => {
-              setAddress(event.nativeEvent.data);
-              setShowAddressModal(false);
-            }}
-          />
-
-          <CancelBtn onPress={() => setShowAddressModal(false)}>
-            <BtnText>닫기</BtnText>
-          </CancelBtn>
+        <Modal visible={showPlaceModal} animationType="slide">
+          <ModalContainer>
+            <PlaceSearchInput
+              onPlaceSelected={place => {
+                setAddress(place.address);
+                setLat(place.lat);
+                setLng(place.lng);
+                setShowPlaceModal(false);
+              }}
+            />
+            <CloseBtn onPress={() => setShowPlaceModal(false)}>
+              <CloseBtnText>닫기</CloseBtnText>
+            </CloseBtn>
+          </ModalContainer>
         </Modal>
       </Wrapper>
     </AuthGuard>
@@ -372,4 +411,31 @@ const BtnTextWhite = styled(BtnText)`
   color: #ffffff;
 `;
 
-export default EditChallengePage;
+const MapBox = styled(MapView)`
+  width: 100%;
+  height: 180px;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const ModalContainer = styled.View`
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+`;
+
+const CloseBtn = styled.TouchableOpacity`
+  margin-top: 16px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #e5e7eb;
+`;
+
+const CloseBtnText = styled.Text`
+  font-size: 16px;
+  font-weight: bold;
+`;
+
+export default ChallengeEditPage;

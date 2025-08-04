@@ -9,6 +9,7 @@ import java.time.LocalTime;
 @Builder
 public class ChallengeGetCurrentChallengeResponseDto {
 
+    private Long id;
     private String title;
     private LocalTime startTime;
     private LocalTime endTime;
