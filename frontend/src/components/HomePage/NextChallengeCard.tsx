@@ -7,7 +7,7 @@ interface Props {
   navigation: any;
 }
 
-const NextChallengeCard = ({challenge, navigation}: Props) => {
+const NextChallengeCard = ({ challenge, navigation }: Props) => {
   console.log('[NextChallengeCard] props.challenge:', challenge);
   if (!challenge) {
     return (
@@ -38,8 +38,11 @@ const NextChallengeCard = ({challenge, navigation}: Props) => {
           </TextGroup>
           <EditBtn
             onPress={() =>
-              navigation.navigate('ChallengeEdit', {challengeId: challenge.id})
-            }>
+              navigation.navigate('ChallengeEdit', {
+                challengeId: challenge.id,
+              })
+            }
+          >
             <EditText>수정</EditText>
           </EditBtn>
         </Row>
@@ -51,9 +54,9 @@ const NextChallengeCard = ({challenge, navigation}: Props) => {
 const OuterCard = styled.View`
   background: white;
   border: 1px solid #e4e4e7;
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 10px;
-  width: 384px;
+  width: 370px;
   height: 160px;
   align-items: center;
   justify-content: center;
@@ -65,6 +68,8 @@ const InnerCard = styled.View`
   padding: 16px;
   width: 315px;
   height: 120px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Row = styled.View`

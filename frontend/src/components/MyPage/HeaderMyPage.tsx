@@ -19,7 +19,7 @@ const HeaderMyPage = () => {
 const Container = styled.View`
   flex-direction: row;
   align-items: center;
-  height: 60px;
+  height: 80px;
   padding: 0 16px;
   background-color: #ffffff;
   border-bottom-width: 1px;
