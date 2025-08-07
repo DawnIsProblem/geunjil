@@ -149,6 +149,7 @@ public class ChallengeService {
                 .lat(challenge.getLat())
                 .lng(challenge.getLng())
                 .radius(challenge.getRadius())
+                .status(challenge.getStatus())
                 .warningCount(challenge.getWarningCount())
                 .createdAt(challenge.getCreatedAt())
                 .updatedAt(challenge.getUpdatedAt())

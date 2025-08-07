@@ -67,44 +67,51 @@ public class ChallengeScheduler {
         }
     }
 
-    @Scheduled(fixedRate = 60000) // 1분 간격
+    @Scheduled(fixedRate = 60000)
     public void checkChallengeStatus() {
         LocalDateTime now = LocalDateTime.now();
-        List<Challenge> challenges = challengeRepository.findByStatusIn(List.of(Status.PENDING, Status.ONGOING));
+        List<Challenge> challenges = challengeRepository.findByStatusIn(
+                List.of(Status.PENDING, Status.ONGOING));
 
         for (Challenge ch : challenges) {
             LocalDateTime startTime = LocalDateTime.of(ch.getDay(), ch.getStartTime());
-            LocalDateTime endTime = LocalDateTime.of(ch.getDay(), ch.getEndTime());
+            LocalDateTime endTime   = LocalDateTime.of(ch.getDay(), ch.getEndTime());
 
+            // 1) PENDING → ONGOING
             if (ch.getStatus() == Status.PENDING && now.isAfter(startTime)) {
                 ch.setStatus(Status.ONGOING);
                 challengeRepository.save(ch);
-                log.info("챌린지 {} 가 자동 시작되었습니다.", ch.getTitle());
-            }
+                log.info("챌린지 {} 자동 시작", ch.getTitle());
 
-            if (ch.getStatus() == Status.ONGOING && now.isBefore(endTime)) {
+                // 2) ONGOING 중: 아직 종료 전 → 위치 검증 & 경고 누적
+            } else if (ch.getStatus() == Status.ONGOING && now.isBefore(endTime)) {
                 checkOngoingChallenge(ch);
-            }
 
-            if (ch.getStatus() == Status.ONGOING && now.isAfter(endTime)) {
-                if (checkGpsInside(ch)) {
+                // 3) ONGOING 중: 종료 시점 지난 후 → 최종 SUCCESS / FAIL
+            } else if (ch.getStatus() == Status.ONGOING && now.isAfter(endTime)) {
+                boolean inside = checkGpsInside(ch);
+                Mypage mypage = mypageRepository.findByUser(ch.getUserId());
+
+                // 3-1) 경고 3회 이상 → 무조건 FAIL
+                if (ch.getWarningCount() >= 3) {
+                    ch.setStatus(Status.FAIL);
+                    mypage.setFailChallenge(mypage.getFailChallenge() + 1);
+                    log.info("챌린지 {} 실패 처리 (경고 3회 이상)", ch.getTitle());
+
+                    // 3-2) GPS 안에 있으면 SUCCESS, 아니면 FAIL
+                } else if (inside) {
                     ch.setStatus(Status.SUCCESS);
-
-                    Mypage mypage = mypageRepository.findByUser(ch.getUserId());
                     mypage.setSuccessChallenge(mypage.getSuccessChallenge() + 1);
-                    mypageRepository.save(mypage);
-
-                    log.info("챌린지 {} 성공 처리!", ch.getTitle());
+                    log.info("챌린지 {} 성공 처리 (종료 시 GPS 안)", ch.getTitle());
                 } else {
                     ch.setStatus(Status.FAIL);
-
-                    Mypage mypage = mypageRepository.findByUser(ch.getUserId());
                     mypage.setFailChallenge(mypage.getFailChallenge() + 1);
-                    mypageRepository.save(mypage);
-
-                    log.info("챌린지 {} 실패 처리 (종료 시 GPS 범위 벗어남).", ch.getTitle());
+                    log.info("챌린지 {} 실패 처리 (종료 시 GPS 벗어남)", ch.getTitle());
                 }
+
+                // 저장 순서 중요: status 먼저, 그 다음 마이페이지
                 challengeRepository.save(ch);
+                mypageRepository.save(mypage);
             }
         }
     }

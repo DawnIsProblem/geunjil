@@ -6,6 +6,9 @@ export type RootStackParamList = {
   MyPage: undefined;
   CreateChallenge: undefined;
   AllChallenges: undefined;
-  ChallengeEdit: {challengeId: number};
-  ChallengeProgress: {challengeId: number};
+  ChallengeEdit: { challengeId: number };
+  ChallengeProgress: { challengeId: number };
+  ChallengeSuccess: { challengeId: number; attempt: number };
+  ChallengeFail: { attempt: number };
+  CameraWithWatermark: { challengeId: number };
 };

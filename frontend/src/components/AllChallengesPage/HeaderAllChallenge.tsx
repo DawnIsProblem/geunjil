@@ -42,6 +42,7 @@ const BackButton = styled.TouchableOpacity`
 const Title = styled.Text`
   font-size: 18px;
   font-weight: bold;
+  margin-left: -60px;
 `;
 
 const NewButton = styled.TouchableOpacity`
