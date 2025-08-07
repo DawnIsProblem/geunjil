@@ -1,9 +1,9 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import type {RootStackParamList} from './src/types/navigation';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { RootStackParamList } from './src/types/navigation';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import LandingPage from './src/pages/LandingPage';
 import LoginPage from './src/pages/LoginPage';
@@ -14,16 +14,20 @@ import CreateChallengePage from './src/pages/CreateChallengePage';
 import AllChallengesPage from './src/pages/AllChallengesPage';
 import ChallengeEditPage from './src/pages/ChallengeEditPage';
 import ChallengeProgressPage from './src/pages/ChallengeProgressPage';
+import ChallengeSuccessPage from './src/pages/ChallengeSuccessPage';
+import ChallengeFailPage from './src/pages/ChallengeFailPage';
+import CameraWithWatermark from './src/pages/CameraWithWatermark';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App = () => {
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Landing"
-          screenOptions={{headerShown: false}}>
+          screenOptions={{ headerShown: false }}
+        >
           <Stack.Screen name="Landing" component={LandingPage} />
           <Stack.Screen name="Login" component={LoginPage} />
           <Stack.Screen name="SignUp" component={SignUpPage} />
@@ -39,6 +43,12 @@ const App = () => {
             name="ChallengeProgress"
             component={ChallengeProgressPage}
           />
+          <Stack.Screen
+            name="ChallengeSuccess"
+            component={ChallengeSuccessPage}
+          />
+          <Stack.Screen name="ChallengeFail" component={ChallengeFailPage} />
+          <Stack.Screen name="CameraWithWatermark" component={CameraWithWatermark} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
