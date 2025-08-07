@@ -1,5 +1,5 @@
-import React, {useEffect} from 'react';
-import {useFocusEffect} from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import styled from 'styled-components/native';
 import Header from '../components/HomePage/HeaderHome';
 import Footer from '../components/Common/Footer';
@@ -9,34 +9,33 @@ import StatCard from '../components/HomePage/StatCard';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AuthGuard from '../components/Common/AuthGuard';
-import {TouchableOpacity} from 'react-native';
-import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import type {RootStackParamList} from '../types/navigation';
+import { TouchableOpacity } from 'react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
 import { useMainInfoStore } from '../store/mainInfoStore';
-
-import useCurrentLocation from '../hooks/useCurrentLocation';
-import {Alert} from 'react-native';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Home'
 >;
 
-const HomePage = ({navigation}: {navigation: HomeScreenNavigationProp}) => {
-  console.log('HomePage 렌더링!');
-
-  const {location, fetchLocation} = useCurrentLocation();
+const HomePage = ({ navigation }: { navigation: HomeScreenNavigationProp }) => {
   const mainInfo = useMainInfoStore(state => state.mainInfo);
   const fetchMainInfo = useMainInfoStore(state => state.fetchMainInfo);
-  
+
   useFocusEffect(
     React.useCallback(() => {
       fetchMainInfo();
-    }, [fetchMainInfo])
+    }, [fetchMainInfo]),
   );
 
   useEffect(() => {
     fetchMainInfo();
+  }, [fetchMainInfo]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchMainInfo, 5000);
+    return () => clearInterval(interval);
   }, [fetchMainInfo]);
 
   if (!mainInfo) {
@@ -58,35 +57,44 @@ const HomePage = ({navigation}: {navigation: HomeScreenNavigationProp}) => {
       <Container>
         <Header />
         <Scroll>
-          <TouchableOpacity
-            onPress={() => {
-              console.log('ProgressCard 눌림!', current?.id);
-              if (!current?.id) {
-                return;
+          {current?.id ? (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('ChallengeProgress', {
+                  challengeId: current.id,
+                })
               }
-              navigation.navigate('ChallengeProgress', {
-                challengeId: current.id,
-              });
-              console.log('navigation.navigate 호출됨!');
-            }}>
-            {/* ... */}
+            >
+              <ProgressCard
+                colors={['#3B81F5', '#4E47E6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Title>진행 중인 챌린지</Title>
+                <SubTitle>{current.title}</SubTitle>
+                <Time>
+                  {current.startTime} ~ {current.endTime}
+                </Time>
+                <Location>
+                  <Icon name="location-outline" size={16} color="#fff" />{' '}
+                  {current.location}
+                </Location>
+                <ProgressBar percent={current.progressPercent} />
+                <Percent>{current.progressPercent}% 완료</Percent>
+              </ProgressCard>
+            </TouchableOpacity>
+          ) : (
+            // 여기만 비어 있을 때 레이아웃
             <ProgressCard
               colors={['#3B81F5', '#4E47E6']}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 0}}>
-              <Title>진행 중인 챌린지</Title>
-              <SubTitle>{current?.title || '-'}</SubTitle>
-              <Time>
-                {current ? `${current.startTime} ~ ${current.endTime}` : '-'}
-              </Time>
-              <Location>
-                <Icon name="location-outline" size={16} color="#fff" />{' '}
-                {current?.location || '-'}
-              </Location>
-              <ProgressBar percent={current?.progressPercent ?? 0} />
-              <Percent>{current?.progressPercent ?? 0}% 완료</Percent>
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <EmptyWrapper>
+                <EmptyText>현재 진행중인 챌린지가 없어요 🥲</EmptyText>
+              </EmptyWrapper>
             </ProgressCard>
-          </TouchableOpacity>
+          )}
 
           <SectionTitle>다음 챌린지</SectionTitle>
           <NextChallengeCard challenge={next} navigation={navigation} />
@@ -117,25 +125,6 @@ const HomePage = ({navigation}: {navigation: HomeScreenNavigationProp}) => {
             <Plus>＋</Plus>
             <QuickText>챌린지 생성</QuickText>
           </QuickAction>
-
-          <QuickAction
-            onPress={async () => {
-              await fetchLocation();
-              if (location) {
-                Alert.alert(
-                  '내 위치 정보',
-                  `위도: ${location.latitude}\n경도: ${location.longitude}`,
-                );
-              } else {
-                Alert.alert(
-                  '위치 정보 없음',
-                  '현재 위치 정보를 가져오지 못했습니다.',
-                );
-              }
-            }}>
-            <Plus>📍</Plus>
-            <QuickText>내 위치 정보 확인하기</QuickText>
-          </QuickAction>
         </Scroll>
         <Footer />
       </Container>
@@ -156,6 +145,19 @@ const Scroll = styled.ScrollView`
 const ProgressCard = styled(LinearGradient)`
   border-radius: 14px;
   padding: 16px;
+`;
+
+const EmptyWrapper = styled.View`
+  flex: 1;
+  height: 160px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const EmptyText = styled.Text`
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
 `;
 
 const Title = styled.Text`
