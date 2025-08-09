@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
-import styled from 'styled-components/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import styled from 'styled-components/native';;
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';

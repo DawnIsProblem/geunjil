@@ -34,7 +34,7 @@ const PlaceSearchInput = ({onPlaceSelected}: PlaceSearchInputProps) => {
       lng: item.geometry.location.lng,
     });
     setResults([]);
-    setQuery(item.formatted_address); // 선택시 입력창에 주소 표시
+    setQuery(item.formatted_address);
   };
 
   return (

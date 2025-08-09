@@ -48,8 +48,5 @@ export default function useCurrentLocation() {
     );
   }, [requestLocationPermission]);
 
-  // 필요하다면 useEffect에서 fetchLocation 자동실행 가능
-  // useEffect(() => { fetchLocation(); }, []);
-
   return {location, error, fetchLocation};
 }

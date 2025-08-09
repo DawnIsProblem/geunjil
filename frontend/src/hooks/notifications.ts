@@ -17,8 +17,8 @@ async function ensureNotificationPermission() {
 }
 
 type RegisterArgs = {
-  userId: number; // ✅ 서버가 현재 userId를 요구한다면 유지
-  accessToken?: string; // 서버가 인증 헤더를 요구하면 넣기
+  userId: number;
+  accessToken?: string;
   backendBaseUrl: string;
 };
 

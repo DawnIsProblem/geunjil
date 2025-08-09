@@ -44,7 +44,6 @@ const CreateChallengePage = () => {
       return;
     }
 
-    // 토큰 꺼내기
     const accessToken = await AsyncStorage.getItem('accessToken');
     console.log('accessToken:', accessToken);
     if (!accessToken) {

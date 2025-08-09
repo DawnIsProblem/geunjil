@@ -84,7 +84,6 @@ const HomePage = ({ navigation }: { navigation: HomeScreenNavigationProp }) => {
               </ProgressCard>
             </TouchableOpacity>
           ) : (
-            // 여기만 비어 있을 때 레이아웃
             <ProgressCard
               colors={['#3B81F5', '#4E47E6']}
               start={{ x: 0, y: 0 }}
