@@ -2,11 +2,14 @@ package com.geunjil.geunjil.domain.challenge.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Getter
+@Setter
 public class ChallengeUpdateChallengeRequestDto {
 
     @Schema(description = "타이틀", example = "점심 운동")

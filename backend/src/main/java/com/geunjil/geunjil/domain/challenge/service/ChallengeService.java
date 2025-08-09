@@ -1,7 +1,6 @@
 package com.geunjil.geunjil.domain.challenge.service;
 
 import com.geunjil.geunjil.domain.challenge.dto.request.ChallengeCreateChallengeRequestDto;
-import com.geunjil.geunjil.domain.challenge.dto.request.ChallengeStopChallengeRequestDto;
 import com.geunjil.geunjil.domain.challenge.dto.request.ChallengeUpdateChallengeRequestDto;
 import com.geunjil.geunjil.domain.challenge.dto.response.*;
 import com.geunjil.geunjil.domain.challenge.entity.Challenge;

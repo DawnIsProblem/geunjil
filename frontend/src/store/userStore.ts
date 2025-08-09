@@ -3,6 +3,7 @@ import {create} from 'zustand';
 interface UserStore {
   user: null | {name: string; email: string; loginId: string; provider: string};
   setUser: (user: {
+    id: number,
     name: string;
     email: string;
     loginId: string;

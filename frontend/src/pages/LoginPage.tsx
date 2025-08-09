@@ -1,12 +1,13 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components/native';
-import {useUserStore} from '../store/userStore';
-import {Alert} from 'react-native';
+import { useUserStore } from '../store/userStore';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {loginApi} from '../api/loginApi';
+import { loginApi } from '../api/loginApi';
 import axios from 'axios';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
-import {BACKEND_BASE_URL, GOOGLE_WEB_CLIENT_ID} from '@env';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { BACKEND_BASE_URL, GOOGLE_WEB_CLIENT_ID } from '@env';
+import { registerFcmTokenToServer } from '../hooks/notifications';
 
 const KakaoLogin = require('@react-native-seoul/kakao-login');
 
@@ -19,15 +20,19 @@ GoogleSignin.configure({
   forceCodeForRefreshToken: false,
 });
 
-const LoginPage = ({navigation}: any) => {
-  const {setUser} = useUserStore();
+const LoginPage = ({ navigation }: any) => {
+  const { setUser } = useUserStore();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     try {
-      const res = await loginApi({loginId, password});
+      const res = await loginApi({ loginId, password });
+
       console.log('로그인 응답 전체:', res);
+
+      const { accessToken: jwt, user } = res.data;
+      const userId = user?.id ?? res.data.id;
 
       const {
         accessToken,
@@ -39,11 +44,19 @@ const LoginPage = ({navigation}: any) => {
 
       await AsyncStorage.setItem('accessToken', accessToken);
       setUser({
-        name,
-        email,
-        loginId: resLoginId,
-        provider,
+        id: userId, // ← store에도 id를 저장해 두는 걸 추천
+        name: user.name,
+        email: user.email,
+        loginId: user.loginId,
+        provider: user.provider,
       });
+
+      await registerFcmTokenToServer({
+        userId,
+        accessToken: jwt,
+        backendBaseUrl: BACKEND_BASE_URL,
+      });
+
       Alert.alert('로그인 성공!', res.message);
       navigation.navigate('Home');
     } catch (e: any) {
@@ -58,14 +71,20 @@ const LoginPage = ({navigation}: any) => {
       console.log('카카오 로그인 결과:', result);
 
       // 1. 백엔드로 accessToken 전송
-      const response = await axios.post('http://10.0.2.2:8082/auth/kakao', {
+      const response = await axios.post(`${BACKEND_BASE_URL}/auth/kakao`, {
         accessToken: result.accessToken,
       });
 
       // 2. JWT 토큰, 유저 정보 저장
-      const {accessToken: jwt, user} = response.data;
+      const { accessToken: jwt, user } = response.data;
       await AsyncStorage.setItem('accessToken', jwt);
       setUser(user);
+
+      await registerFcmTokenToServer({
+        userId: user.id,
+        accessToken: jwt,
+        backendBaseUrl: BACKEND_BASE_URL,
+      });
 
       // 3. 홈 화면 이동
       Alert.alert('로그인 성공!', '카카오 로그인에 성공했습니다.');
@@ -78,7 +97,9 @@ const LoginPage = ({navigation}: any) => {
 
   const handleGoogleLogin = async () => {
     try {
-      await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
       const userInfo = await GoogleSignin.signIn();
       console.log('userInfo:', userInfo);
 
@@ -95,12 +116,19 @@ const LoginPage = ({navigation}: any) => {
       const response = await axios.post(`${BACKEND_BASE_URL}/auth/google`, {
         idToken,
       });
-      const {accessToken: jwt, user} = response.data;
+      const { accessToken: jwt, user } = response.data;
       await AsyncStorage.setItem('accessToken', jwt);
       setUser(user);
+
+      await registerFcmTokenToServer({
+        userId: user.id,
+        accessToken: jwt,
+        backendBaseUrl: BACKEND_BASE_URL,
+      });
+
       Alert.alert('로그인 성공!', '구글 로그인에 성공했습니다.');
       navigation.navigate('Home');
-    } catch (error: any) {
+      } catch (error: any) {
       console.log(
         '구글 로그인 에러',
         error,
