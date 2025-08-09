@@ -31,12 +31,11 @@ const MyPage = ({navigation}: any) => {
         return;
       }
       try {
-        const infoRes = await getMypageInfo(accessToken); // 이제 string만 전달됨!
+        const infoRes = await getMypageInfo(accessToken);
         const recentRes = await getMypageRecent3(accessToken);
         setInfo(infoRes.data);
         setRecent(recentRes.data);
       } catch (e) {
-        // 에러 처리 (예: Alert로 알려주거나, 별도 에러 상태 저장)
         Alert.alert('마이페이지 정보 조회 실패', '다시 시도해 주세요.');
         setInfo(null);
         setRecent([]);
@@ -58,7 +57,7 @@ const MyPage = ({navigation}: any) => {
     try {
       await logoutApi();
       await AsyncStorage.removeItem('accessToken');
-      logout(); // <<<<<< 반드시 추가!
+      logout();
       navigation.replace('Landing');
     } catch (e) {
       Alert.alert('로그아웃 실패', '다시 시도해주세요.');
@@ -83,7 +82,6 @@ const MyPage = ({navigation}: any) => {
               }
               await deleteAccountApi(accessToken);
               await AsyncStorage.removeItem('accessToken');
-              // TODO: zustand 스토어 등 사용자 상태도 초기화 필요하면 추가
               navigation.replace('Login');
             } catch (e) {
               Alert.alert('회원 탈퇴 실패', '다시 시도해주세요.');

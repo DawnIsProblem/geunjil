@@ -11,7 +11,6 @@ import {
 import App from './App';
 import { name as appName } from './app.json';
 
-// ✅ v22 스타일 (namespaced 경고 없어짐)
 const m = getMessaging(getApp());
 setBackgroundMessageHandler(m, async remoteMessage => {
   console.log('📩 Background message:', remoteMessage);

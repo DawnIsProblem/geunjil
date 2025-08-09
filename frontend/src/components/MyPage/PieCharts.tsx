@@ -5,7 +5,6 @@ import {PieChart} from 'react-native-chart-kit';
 
 const screenWidth = Dimensions.get('window').width;
 
-// props 타입 정의!
 interface PieChartsProps {
   success: number;
   stoped: number;

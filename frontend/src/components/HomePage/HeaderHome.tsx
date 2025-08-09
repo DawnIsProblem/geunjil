@@ -16,11 +16,9 @@ const HeaderHome: React.FC = () => {
   const { location, error, fetchLocation } = useCurrentLocation();
   const [locationText, setLocationText] = React.useState<string>('로딩 중...');
 
-  // 1) 화면 포커스마다 내 정보 + 위치 갱신
   useFocusEffect(
     React.useCallback(() => {
       (async () => {
-        // ── 프로필
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) {
           Alert.alert('로그인 후 이용해주세요');
@@ -33,13 +31,11 @@ const HeaderHome: React.FC = () => {
           Alert.alert('마이페이지 정보 조회 실패');
         }
 
-        // ── 위치
         await fetchLocation();
       })();
     }, [fetchLocation])
   );
 
-  // 2) 위치가 바뀔 때마다 구글 지오코딩 API 호출
   useEffect(() => {
     if (!location) {
       if (error) setLocationText('위치 불러오기 실패');

@@ -40,7 +40,6 @@ public class FirebaseConfig {
 
     @Bean
     public FirebaseApp firebaseApp() throws Exception {
-        // resources/firebase/service-account.json 기준
         InputStream is = new ClassPathResource("firebase/service-account.json").getInputStream();
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(is))

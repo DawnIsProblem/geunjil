@@ -40,7 +40,7 @@ public class ChallengeController {
     }
 
     @PatchMapping("/{challengeId}")
-    @Operation(summary = "챌린지 수정 API", description = "도전 할  챌린지의 정보를 수정합니다.")
+    @Operation(summary = "챌린지 수정 API", description = "도전할 챌린지의 정보를 수정합니다.")
     public ResponseEntity<CommonResponse<ChallengeUpdateChallengeResponseDto>> update(
             @PathVariable Long challengeId,
             Authentication authentication,
