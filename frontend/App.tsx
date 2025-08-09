@@ -1,9 +1,10 @@
-import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './src/types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, onMessage } from '@react-native-firebase/messaging';
+import type { RootStackParamList } from './src/types/navigation';
 
 import LandingPage from './src/pages/LandingPage';
 import LoginPage from './src/pages/LoginPage';
@@ -21,6 +22,14 @@ import CameraWithWatermark from './src/pages/CameraWithWatermark';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App = () => {
+  React.useEffect(() => {
+    const m = getMessaging(getApp());
+    const unsub = onMessage(m, async rm => {
+      console.log('📩 Foreground message:', rm);
+    });
+    return unsub;
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
       <NavigationContainer>
@@ -48,7 +57,10 @@ const App = () => {
             component={ChallengeSuccessPage}
           />
           <Stack.Screen name="ChallengeFail" component={ChallengeFailPage} />
-          <Stack.Screen name="CameraWithWatermark" component={CameraWithWatermark} />
+          <Stack.Screen
+            name="CameraWithWatermark"
+            component={CameraWithWatermark}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
