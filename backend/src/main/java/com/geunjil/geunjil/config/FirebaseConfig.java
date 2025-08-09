@@ -3,9 +3,12 @@ package com.geunjil.geunjil.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -20,7 +23,7 @@ public class FirebaseConfig {
         try {
             InputStream serviceAccount = getClass()
                     .getClassLoader()
-                    .getResourceAsStream("firebase/serviceAccountKey.json");
+                    .getResourceAsStream("firebase/service-account.json");
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -34,5 +37,26 @@ public class FirebaseConfig {
             log.error("⛔️파이어베이스 초기화 실패", e);
         }
     }
+
+    @Bean
+    public FirebaseApp firebaseApp() throws Exception {
+        // resources/firebase/service-account.json 기준
+        InputStream is = new ClassPathResource("firebase/service-account.json").getInputStream();
+        FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(is))
+                .build();
+
+        if (FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.initializeApp(options);
+        } else {
+            return FirebaseApp.getInstance();
+        }
+    }
+
+    @Bean
+    public FirebaseMessaging firebaseMessaging(FirebaseApp app) {
+        return FirebaseMessaging.getInstance(app);
+    }
+
 
 }

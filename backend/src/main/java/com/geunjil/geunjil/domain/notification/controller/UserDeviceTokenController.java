@@ -2,7 +2,11 @@ package com.geunjil.geunjil.domain.notification.controller;
 
 import com.geunjil.geunjil.common.model.CommonResponse;
 import com.geunjil.geunjil.domain.notification.dto.request.SaveDeviceTokenRequestDto;
+import com.geunjil.geunjil.domain.notification.repository.UserDeviceTokenRepository;
+import com.geunjil.geunjil.domain.notification.service.FirebaseNotificationService;
 import com.geunjil.geunjil.domain.notification.service.UserDeviceTokenService;
+import com.geunjil.geunjil.domain.user.entity.User;
+import com.geunjil.geunjil.domain.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserDeviceTokenController {
 
     private final UserDeviceTokenService userDeviceTokenService;
+    private final UserRepository userRepository;
+    private final FirebaseNotificationService fcm;
+    private final UserDeviceTokenRepository tokenRepo;
 
     @PostMapping
     @Operation(
@@ -27,6 +34,17 @@ public class UserDeviceTokenController {
     ) {
         userDeviceTokenService.saveDeviceToken(request);
         return ResponseEntity.ok(CommonResponse.success("디바이스 토큰 등록 성공!", null));
+    }
+
+    @PostMapping("/test")
+    public ResponseEntity<String> sendTest(@RequestParam Long userId,
+                                           @RequestParam String title,
+                                           @RequestParam String body) {
+        User user = userRepository.findById(userId).orElseThrow();
+        tokenRepo.findByUser(user).forEach(t ->
+                fcm.sendNotification(t.getDeviceToken(), title, body)
+        );
+        return ResponseEntity.ok("ok");
     }
 
 }
