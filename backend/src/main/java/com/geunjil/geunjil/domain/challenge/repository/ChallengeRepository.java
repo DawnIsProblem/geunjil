@@ -19,5 +19,5 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     List<Challenge> findByUserIdAndStatusOrderByStartTimeAsc(User user, Status status);
     Optional<Challenge> findTopByUserIdAndStatusOrderByStartTimeDesc(User userId, Status status);
     Optional<Challenge> findTopByUserIdAndStatusOrderByStartTimeAsc(User userId, Status status);
-
+    long countByUserId(User user);
 }
