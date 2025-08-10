@@ -28,43 +28,45 @@ const LoginPage = ({ navigation }: any) => {
   const handleLogin = async () => {
     try {
       const res = await loginApi({ loginId, password });
-
-      console.log('로그인 응답 전체:', res);
-
-      const { accessToken: jwt, user } = res.data;
-      const userId = user?.id ?? res.data.id;
-
-      const {
-        accessToken,
-        name,
-        email,
-        loginId: resLoginId,
-        provider,
-      } = res.data;
-
+      console.log('로그인 응답 전체:', res?.data);
+  
+      const root = res?.data ?? {};
+      const payload = root.data ?? root;
+  
+      const accessToken: string | undefined = payload.accessToken;
+      const id: number | undefined = payload.id;
+  
+      if (!accessToken) throw new Error('accessToken이 응답에 없습니다.');
+      if (!id) throw new Error('id가 응답에 없습니다.');
+  
       await AsyncStorage.setItem('accessToken', accessToken);
+  
       setUser({
-        id: userId, // ← store에도 id를 저장해 두는 걸 추천
-        name: user.name,
-        email: user.email,
-        loginId: user.loginId,
-        provider: user.provider,
+        id: Number(id),
+        name: payload.name ?? '',
+        email: payload.email ?? '',
+        loginId: payload.loginId ?? loginId,
+        provider: String(payload.provider ?? 'LOCAL'),
       });
-
+  
       await registerFcmTokenToServer({
-        userId,
-        accessToken: jwt,
+        userId: Number(id),
+        accessToken,
         backendBaseUrl: BACKEND_BASE_URL,
       });
-
-      Alert.alert('로그인 성공!', res.message);
+  
+      Alert.alert('로그인 성공!', root.message || '환영합니다.');
       navigation.navigate('Home');
     } catch (e: any) {
-      console.log('로그인 실패:', e, e.response?.data);
-      Alert.alert('로그인 실패', '아이디 혹은 비밀번호를 확인하세요.');
+      console.log('로그인 실패:', e, e?.response?.data);
+      const serverMsg =
+        e?.response?.data?.message ||
+        e?.message ||
+        '아이디 혹은 비밀번호를 확인하세요.';
+      Alert.alert('로그인 실패', serverMsg);
     }
-  };
-
+  };  
+  
   const handleKakaoLogin = async () => {
     try {
       const result = await KakaoLogin.login();

@@ -76,6 +76,7 @@ public class UserService {
         }
 
         return UserLoginResponseDto.builder()
+                .id(user.getId())
                 .loginId(user.getLoginId())
                 .name(user.getName())
                 .email(user.getEmail())

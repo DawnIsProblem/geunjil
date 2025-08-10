@@ -1,27 +1,44 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components/native';
-import {Alert} from 'react-native';
-import {signupApi} from '../api/signupApi';
+import { Alert, TouchableOpacity, View } from 'react-native';
+import { signupApi } from '../api/signupApi';
 
-const SignUpPage = ({navigation}: any) => {
+const SignUpPage = ({ navigation }: any) => {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [agreed, setAgreed] = useState(false);
 
   const handleSignup = async () => {
+    if (!agreed) {
+      Alert.alert('약관 동의', '이용약관 및 개인정보처리방침에 동의해주세요.');
+      return;
+    }
+
     if (password !== passwordConfirm) {
       Alert.alert('비밀번호가 일치하지 않습니다.');
       return;
     }
 
-    const payload = {loginId, password, email, name};
+    const payload = { loginId, password, email, name };
     console.log('회원가입 보낼 데이터:', payload);
 
     try {
       const result = await signupApi(payload);
-      Alert.alert('회원가입 성공!', result.message);
+      Alert.alert(
+        '회원가입 성공!',
+        result.message || '가입이 완료되었습니다.',
+        [
+          {
+            text: '확인',
+            onPress: () => {
+              navigation.replace('Login');
+            },
+          },
+        ],
+      );
     } catch (error: any) {
       console.log('에러 발생!', error, error?.response);
       Alert.alert(
@@ -90,12 +107,21 @@ const SignUpPage = ({navigation}: any) => {
           />
         </Field>
 
-        <CheckRow>
-          <CheckBox />
-          <CheckText>이용약관 및 개인정보처리방침에 동의합니다.</CheckText>
-        </CheckRow>
+        <TouchableOpacity
+          onPress={() => setAgreed(a => !a)}
+          activeOpacity={0.8}
+        >
+          <CheckRow>
+            <CheckBoxOuter>{agreed ? <CheckBoxInner /> : null}</CheckBoxOuter>
+            <CheckText>이용약관 및 개인정보처리방침에 동의합니다.</CheckText>
+          </CheckRow>
+        </TouchableOpacity>
 
-        <PrimaryButton onPress={handleSignup}>
+        <PrimaryButton
+          disabled={!agreed}
+          onPress={handleSignup}
+          style={{ opacity: agreed ? 1 : 0.5 }}
+        >
           <PrimaryButtonText>회원가입</PrimaryButtonText>
         </PrimaryButton>
 
@@ -172,12 +198,21 @@ const CheckRow = styled.View`
   width: 100%;
 `;
 
-const CheckBox = styled.View`
-  width: 18px;
-  height: 18px;
-  border: 1px solid #333;
+const CheckBoxOuter = styled.View`
+  width: 20px;
+  height: 20px;
+  border: 2px solid #333;
   border-radius: 4px;
   margin-right: 8px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CheckBoxInner = styled.View`
+  width: 12px;
+  height: 12px;
+  background-color: #3b80f5;
+  border-radius: 2px;
 `;
 
 const CheckText = styled.Text`
