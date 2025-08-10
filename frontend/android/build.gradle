@@ -1,0 +1,43 @@
+subprojects {
+    afterEvaluate { project ->
+        project.configurations.matching { true }.all {
+            resolutionStrategy {
+                force(
+                    "com.google.android.gms:play-services-location:21.3.0",
+                    "com.google.android.gms:play-services-base:18.5.0",
+                    "com.google.android.gms:play-services-basement:18.4.0",
+                    "com.google.android.gms:play-services-tasks:18.2.0",
+                    "com.google.android.gms:play-services-auth:20.7.0"
+                )
+            }
+        }
+    }
+}
+
+buildscript {
+    ext {
+        buildToolsVersion = "35.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 35
+        targetSdkVersion = 35
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
+        googlePlayServicesAuthVersion = "20.7.0"
+
+    }
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
+    }
+    
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        classpath 'com.google.gms:google-services:4.4.0'
+        classpath "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin:2.0.1"
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"

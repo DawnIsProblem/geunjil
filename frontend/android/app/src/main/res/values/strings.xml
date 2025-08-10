@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">frontend</string>
+    <string name="kakao_app_key">64c8b90da1cacecd6b6061a1da6017ea</string>
+    <string name="default_notification_channel_id">default</string>
+</resources>
