@@ -8,6 +8,7 @@ import lombok.Getter;
 @Builder
 public class UserLoginResponseDto {
 
+    private Long id;
     private String loginId;
     private SocialLoginType provider;
     private String name;
