@@ -42,13 +42,9 @@
 | **언어 & 프레임워크**   | Java 21, Spring Boot 3.5.3               |
 | **빌드 & 의존성 관리**  | Gradle                                   |
 | **보안 / 인증**      | Spring Security, JWT   |
-| **데이터베이스**       | MySQL 8.0, Spring Data JPA               |
-| **캐시 / 세션 관리**   | Redis                                    |
-| **유효성 검증**       | Spring Validation                        |
+| **데이터베이스**       | MySQL 8.0, Redis, Spring Data JPA        |
 | **API 문서화**      | Springdoc OpenAPI (Swagger UI)           |
-| **로깅 & JSON 처리** | Gson                                     |
 | **푸시 알림**        | Firebase Admin SDK                       |
-| **소셜 로그인**       | Google API Client, OAuth Client (Google) |
 | **유틸리티**         | Lombok                                   |
 | **테스트**          | JUnit 5, Spring Boot Test, Mockito       |
 
